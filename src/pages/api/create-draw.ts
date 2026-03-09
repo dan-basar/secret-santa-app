@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { v4 as uuidv4 } from 'uuid';
-import { getPool, sql } from '` @/lib/db';
-import { isMatchingPossible, createMatches, Participant } from '` @/lib/matching';
+import { getPool, sql } from '@/lib/db';
+import { isMatchingPossible, createMatches, Participant } from '@/lib/matching';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).end();

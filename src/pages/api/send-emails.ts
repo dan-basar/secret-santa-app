@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { getPool, sql } from '` @/lib/db';
-import { sendMatchEmail } from '` @/lib/email';
+import { getPool, sql } from '@/lib/db';
+import { sendMatchEmail } from '@/lib/email';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).end();
