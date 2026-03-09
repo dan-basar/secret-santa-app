@@ -3,8 +3,14 @@ import sql from 'mssql';
 const config: sql.config = {
   server: process.env.AZURE_SQL_SERVER!,
   database: process.env.AZURE_SQL_DATABASE!,
-  user: process.env.AZURE_SQL_USER!,
-  password: process.env.AZURE_SQL_PASSWORD!,
+  authentication: {
+    type: 'azure-active-directory-service-principal-secret',
+    options: {
+      clientId: process.env.AZURE_CLIENT_ID!,
+      clientSecret: process.env.AZURE_CLIENT_SECRET!,
+      tenantId: process.env.AZURE_TENANT_ID!,
+    },
+  },
   options: {
     encrypt: true,
     trustServerCertificate: false,
@@ -21,4 +27,3 @@ export async function getPool(): Promise<sql.ConnectionPool> {
 }
 
 export { sql };
-

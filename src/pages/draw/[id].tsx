@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
-import styles from '` @/styles/Draw.module.css';
+import styles from '@/styles/Draw.module.css';
 
 interface Match {
   giver_name: string;
