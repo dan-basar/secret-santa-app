@@ -86,7 +86,7 @@ export default function Home() {
 
     const filled = participants.filter((p) => p.name.trim() || p.email.trim());
     const invalid = filled.filter(
-      (p) => !p.name.trim() || !p.email.trim() || !/\S+@\S+\.\S+/.test(p.email)
+      (p) => !p.name.trim() || (p.email.trim() && !/\S+@\S+\.\S+/.test(p.email))
     );
 
     if (filled.length < 2) {
@@ -219,7 +219,7 @@ export default function Home() {
                   />
                   <input
                     type="email"
-                    placeholder="email@example.com"
+                    placeholder="email (optional)"
                     value={p.email}
                     onChange={(e) => updateParticipant(p.id, 'email', e.target.value)}
                     maxLength={320}
@@ -272,4 +272,3 @@ export default function Home() {
     </>
   );
 }
-

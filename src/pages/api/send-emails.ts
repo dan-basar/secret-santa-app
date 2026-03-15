@@ -45,9 +45,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     await Promise.all(
-      matchesResult.recordset.map((match) =>
-        sendMatchEmail(match.giver_name, match.giver_email, match.receiver_name)
-      )
+      matchesResult.recordset
+        .filter((match) => match.giver_email)
+        .map((match) =>
+          sendMatchEmail(match.giver_name, match.giver_email, match.receiver_name)
+        )
     );
 
     const r3 = new sql.Request(pool);
@@ -61,4 +63,3 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(500).json({ error: 'Failed to send emails. Please try again.' });
   }
 }
-

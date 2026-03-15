@@ -45,7 +45,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const result = await r
         .input('drawId', sql.UniqueIdentifier, drawId)
         .input('name', sql.NVarChar(200), p.name)
-        .input('email', sql.NVarChar(320), p.email)
+        .input('email', sql.NVarChar(320), p.email || null)
         .input('group_name', sql.NVarChar(200), p.group || null)
         .query(
           `INSERT INTO Participants (draw_id, name, email, group_name)
@@ -82,4 +82,3 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(500).json({ error: 'Database error. Please try again.' });
   }
 }
-
