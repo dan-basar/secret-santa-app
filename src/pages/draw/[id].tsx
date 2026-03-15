@@ -198,69 +198,96 @@ export default function DrawPage() {
               {draw.matches.length} participant{draw.matches.length !== 1 ? 's' : ''} — each person will give a gift to the person listed beside them.
             </p>
 
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>Giver</th>
-                  <th>Group</th>
-                  <th>→ Receiving for</th>
-                  <th>Group</th>
-                </tr>
-              </thead>
-              <tbody>
-                {draw.matches.map((m, i) => (
-                  <tr key={i}>
-                    <td className={styles.nameCell}>
-                      <span className={styles.name}>{m.giver_name}</span>
-                      <span className={styles.email}>{m.giver_email}</span>
-                    </td>
-                    <td>
-                      {m.giver_group
-                        ? <span className={styles.groupBadge}>{m.giver_group}</span>
-                        : <span className={styles.noGroup}>—</span>}
-                    </td>
-                    <td className={styles.nameCell}>
-                      <span className={styles.name}>{m.receiver_name}</span>
-                    </td>
-                    <td>
-                      {m.receiver_group
-                        ? <span className={styles.groupBadge}>{m.receiver_group}</span>
-                        : <span className={styles.noGroup}>—</span>}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            {(() => {
+              const hasGroups = draw.matches.some((m) => m.giver_group || m.receiver_group);
+              return (
+                <table className={styles.table}>
+                  <colgroup>
+                    <col style={{ width: hasGroups ? '35%' : '50%' }} />
+                    {hasGroups && <col style={{ width: '15%' }} />}
+                    <col style={{ width: hasGroups ? '35%' : '50%' }} />
+                    {hasGroups && <col style={{ width: '15%' }} />}
+                  </colgroup>
+                  <thead>
+                    <tr>
+                      <th>Giver</th>
+                      {hasGroups && <th>Group</th>}
+                      <th>→ Receiving for</th>
+                      {hasGroups && <th>Group</th>}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {draw.matches.map((m, i) => (
+                      <tr key={i}>
+                        <td className={styles.nameCell}>
+                          <span className={styles.name}>{m.giver_name}</span>
+                          {m.giver_email && <span className={styles.email}>{m.giver_email}</span>}
+                        </td>
+                        {hasGroups && (
+                          <td>
+                            {m.giver_group
+                              ? <span className={styles.groupBadge}>{m.giver_group}</span>
+                              : <span className={styles.noGroup}>—</span>}
+                          </td>
+                        )}
+                        <td className={styles.nameCell}>
+                          <span className={styles.name}>{m.receiver_name}</span>
+                        </td>
+                        {hasGroups && (
+                          <td>
+                            {m.receiver_group
+                              ? <span className={styles.groupBadge}>{m.receiver_group}</span>
+                              : <span className={styles.noGroup}>—</span>}
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              );
+            })()}
           </section>
 
           {/* Email section */}
           <section className={`card ${styles.section}`}>
             <h2 className={styles.sectionTitle}>Email notifications</h2>
 
-            {emailsSentDate ? (
-              <p className="success-msg">
-                ✓ Emails were sent on {emailsSentDate}. Each participant has been notified of their match.
-              </p>
-            ) : (
-              <>
-                <p className={styles.sectionDesc}>
-                  Send each participant an email revealing who they drew. This can only be done once.
-                </p>
-                {emailError && <p className="error-msg" style={{ marginBottom: 12 }}>{emailError}</p>}
-                {emailSuccess && (
-                  <p className="success-msg" style={{ marginBottom: 12 }}>
-                    ✓ Emails sent successfully!
+            {(() => {
+              const emailCount = draw.matches.filter((m) => m.giver_email).length;
+              const hasEmails = emailCount > 0;
+
+              if (emailsSentDate) {
+                return (
+                  <p className="success-msg">
+                    ✓ Emails were sent on {emailsSentDate}. Each participant has been notified of their match.
                   </p>
-                )}
-                <button
-                  className="btn btn-success"
-                  onClick={handleSendEmails}
-                  disabled={emailLoading || emailSuccess}
-                >
-                  {emailLoading ? 'Sending…' : `📧 Send emails to all ${draw.matches.length} participants`}
-                </button>
-              </>
-            )}
+                );
+              }
+
+              return (
+                <>
+                  <p className={styles.sectionDesc}>
+                    {hasEmails
+                      ? `Send each participant an email revealing who they drew. This can only be done once. ${emailCount} of ${draw.matches.length} participant${draw.matches.length !== 1 ? 's' : ''} have an email address.`
+                      : 'No participants have an email address. Add emails to participants to enable this feature.'}
+                  </p>
+                  {emailError && <p className="error-msg" style={{ marginBottom: 12 }}>{emailError}</p>}
+                  {emailSuccess && (
+                    <p className="success-msg" style={{ marginBottom: 12 }}>
+                      ✓ Emails sent successfully!
+                    </p>
+                  )}
+                  <button
+                    className="btn btn-success"
+                    onClick={handleSendEmails}
+                    disabled={emailLoading || emailSuccess || !hasEmails}
+                    title={!hasEmails ? 'No participants have an email address' : undefined}
+                  >
+                    {emailLoading ? 'Sending…' : `📧 Send emails to ${emailCount} participant${emailCount !== 1 ? 's' : ''}`}
+                  </button>
+                </>
+              );
+            })()}
           </section>
 
           {/* Delete section */}
@@ -305,4 +332,3 @@ export default function DrawPage() {
     </>
   );
 }
-

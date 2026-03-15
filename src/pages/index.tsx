@@ -141,7 +141,7 @@ export default function Home() {
           <div className={styles.headerInner}>
             <span className={styles.icon}>🎁</span>
             <div>
-              <h1 className={styles.title}>Secret Santa Picker</h1>
+              <h1 className={styles.title}>Secret Santa Picker App</h1>
               <p className={styles.subtitle}>Enter your groups and participants, then draw matches.</p>
             </div>
           </div>
@@ -156,7 +156,7 @@ export default function Home() {
                 Groups
               </h2>
               <p className={styles.sectionDesc}>
-                Optional. Members of the same group won't be matched with each other.
+                Optional. <b>Members of the same group will not be matched with each other.</b>
               </p>
             </div>
 
