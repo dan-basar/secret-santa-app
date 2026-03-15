@@ -156,7 +156,7 @@ export default function Home() {
                 Groups
               </h2>
               <p className={styles.sectionDesc}>
-                Optional. <b>Members of the same group will not be matched with each other.</b>
+                Optional. Members of the same group won't be matched with each other.
               </p>
             </div>
 
@@ -182,7 +182,7 @@ export default function Home() {
               ))}
             </div>
 
-            <button className={`btn btn-secondary ${styles.addBtn}`} onClick={addGroup}>
+            <button className={`btn btn-secondary ${styles.addBtn}`} onClick={addGroup} disabled={groups.length >= 20}>
               + Add group
             </button>
           </section>
