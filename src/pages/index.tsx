@@ -156,7 +156,7 @@ export default function Home() {
                 Groups
               </h2>
               <p className={styles.sectionDesc}>
-                Optional. Members of the same group won't be matched with each other.
+                Optional. Members of the same group<b> will not </b>be matched with each other.
               </p>
             </div>
 
