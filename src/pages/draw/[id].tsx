@@ -212,7 +212,7 @@ export default function DrawPage() {
                     <tr>
                       <th>Giver</th>
                       {hasGroups && <th>Group</th>}
-                      <th>→ Receiving for</th>
+                      <th>→ Giving to</th>
                       {hasGroups && <th>Group</th>}
                     </tr>
                   </thead>
