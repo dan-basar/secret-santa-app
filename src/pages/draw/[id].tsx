@@ -210,9 +210,9 @@ export default function DrawPage() {
                   </colgroup>
                   <thead>
                     <tr>
-                      <th>Giver</th>
+                      <th>Gifter</th>
                       {hasGroups && <th>Group</th>}
-                      <th>→ Giving to</th>
+                      <th>→ Gifting to</th>
                       {hasGroups && <th>Group</th>}
                     </tr>
                   </thead>

@@ -17,14 +17,14 @@ export async function sendMatchEmail(
     from: `Secret Santa <${process.env.GMAIL_USER}>`,
     to: toEmail,
     subject: "🎁 Your Secret Santa Match",
-    text: `Dear ${toName},\n\nYou have drawn ${matchName}'s name for the gift exchange this year.\n\nHappy gifting!`,
+    text: `Dear ${toName},\n\nYou have drawn ${matchName}'s name for the gift exchange.\n\nHappy gifting!!`,
     html: `
       <div style="font-family: Georgia, serif; max-width: 480px; margin: 0 auto; padding: 32px; color: #1a1a1a;">
         <p style="font-size: 18px; margin-bottom: 24px;">Dear ${toName},</p>
         <p style="font-size: 16px; line-height: 1.6;">
-          You have drawn <strong>${matchName}</strong>'s name for the gift exchange this year.
+          You have drawn <strong>${matchName}</strong>'s name for the gift exchange.
         </p>
-        <p style="font-size: 14px; color: #888; margin-top: 32px;">Happy gifting!</p>
+        <p style="font-size: 14px; color: #888; margin-top: 32px;">Happy gifting!!</p>
       </div>
     `,
   });
