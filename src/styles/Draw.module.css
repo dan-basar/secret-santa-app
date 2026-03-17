@@ -105,7 +105,7 @@
 }
 
 .sectionTitle {
-  font-size: 18px;
+  font-size: 20px;
   margin-bottom: 8px;
 }
 
@@ -129,7 +129,7 @@
 .table th {
   text-align: left;
   padding: 8px 12px 10px;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.08em;
