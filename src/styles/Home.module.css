@@ -19,12 +19,12 @@
 }
 
 .icon {
-  font-size: 32px;
+  font-size: 48px;
   line-height: 1;
 }
 
 .title {
-  font-size: 26px;
+  font-size: 32px;
   color: var(--ink);
   margin-bottom: 4px;
 }
@@ -33,7 +33,7 @@
   font-size: 16px;
   color: var(--ink-light);
   font-family: var(--font-sans);
-  font-weight: 300;
+  font-weight: 600;
 }
 
 .main {
