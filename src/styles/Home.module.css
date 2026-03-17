@@ -31,9 +31,9 @@
 
 .subtitle {
   font-size: 14px;
-  color: var(--ink-light);
+  color: var(--ink);
   font-family: var(--font-sans);
-  font-weight: 400;
+  font-weight: 300;
 }
 
 .main {
@@ -87,7 +87,7 @@
 }
 
 .sectionDesc {
-  font-size: 13px;
+  font-size: 16px;
   color: var(--ink-light);
   line-height: 1.5;
 }
@@ -172,7 +172,7 @@
   border-top: 1px solid var(--border);
   padding: 20px 24px;
   text-align: center;
-  font-size: 18px;
+  font-size: 14px;
   color: var(--ink-light);
 }
 
