@@ -174,7 +174,7 @@ export default function DrawPage() {
       <div className={styles.page}>
         <header className={styles.header}>
           <div className={styles.headerInner}>
-            <Link href="/" className={styles.homeLink}>🎁 Secret Santa Picker</Link>
+            <Link href="/" className={styles.homeLink}>🎅🎁 Secret Santa Picker App</Link>
             <span className={styles.headerMeta}>Draw created {createdDate}</span>
           </div>
         </header>
