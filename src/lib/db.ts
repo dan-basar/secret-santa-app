@@ -9,15 +9,24 @@ const config: sql.config = {
     encrypt: true,
     trustServerCertificate: false,
   },
+  connectionTimeout: 5000,
+  requestTimeout: 5000,
 };
 
 let pool: sql.ConnectionPool | null = null;
 
 export async function getPool(): Promise<sql.ConnectionPool> {
+  if (pool && !pool.connected) {
+    pool = null;
+  }
   if (!pool) {
     pool = await sql.connect(config);
   }
   return pool;
+}
+
+export function resetPool(): void {
+  pool = null;
 }
 
 export { sql };

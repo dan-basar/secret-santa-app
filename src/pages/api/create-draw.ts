@@ -1,14 +1,15 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { v4 as uuidv4 } from 'uuid';
-import { getPool, sql } from '@/lib/db';
+import { getPool, resetPool, sql } from '@/lib/db';
 import { isMatchingPossible, createMatches, Participant } from '@/lib/matching';
 
-async function withRetry<T>(fn: () => Promise<T>, retries = 1): Promise<T> {
+async function withRetry<T>(fn: () => Promise<T>, retries = 2): Promise<T> {
   try {
     return await fn();
   } catch (err: any) {
     if (retries > 0 && err.code === 'ETIMEOUT') {
-      console.warn('DB connection timed out, retrying...');
+      console.warn('DB connection timed out, resetting pool and retrying...');
+      resetPool();
       return withRetry(fn, retries - 1);
     }
     throw err;
