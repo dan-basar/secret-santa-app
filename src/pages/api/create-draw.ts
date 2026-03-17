@@ -3,6 +3,18 @@ import { v4 as uuidv4 } from 'uuid';
 import { getPool, sql } from '@/lib/db';
 import { isMatchingPossible, createMatches, Participant } from '@/lib/matching';
 
+async function withRetry<T>(fn: () => Promise<T>, retries = 1): Promise<T> {
+  try {
+    return await fn();
+  } catch (err: any) {
+    if (retries > 0 && err.code === 'ETIMEOUT') {
+      console.warn('DB connection timed out, retrying...');
+      return withRetry(fn, retries - 1);
+    }
+    throw err;
+  }
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).end();
 
@@ -26,58 +38,66 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   const drawId = uuidv4();
-  const pool = await getPool();
-  const transaction = new sql.Transaction(pool);
 
   try {
-    await transaction.begin();
+    const result = await withRetry(async () => {
+      const pool = await getPool();
+      const transaction = new sql.Transaction(pool);
 
-    // Insert draw
-    const r0 = new sql.Request(transaction);
-    await r0.input('drawId', sql.UniqueIdentifier, drawId).query(
-      `INSERT INTO Draws (id) VALUES (@drawId)`
-    );
+      try {
+        await transaction.begin();
 
-    // Insert participants and capture their DB ids
-    const participantIds: number[] = [];
-    for (const p of participants) {
-      const r = new sql.Request(transaction);
-      const result = await r
-        .input('drawId', sql.UniqueIdentifier, drawId)
-        .input('name', sql.NVarChar(200), p.name)
-        .input('email', sql.NVarChar(320), p.email || null)
-        .input('group_name', sql.NVarChar(200), p.group || null)
-        .query(
-          `INSERT INTO Participants (draw_id, name, email, group_name)
-           OUTPUT INSERTED.id
-           VALUES (@drawId, @name, @email, @group_name)`
+        // Insert draw
+        const r0 = new sql.Request(transaction);
+        await r0.input('drawId', sql.UniqueIdentifier, drawId).query(
+          `INSERT INTO Draws (id) VALUES (@drawId)`
         );
-      participantIds.push(result.recordset[0].id);
-    }
 
-    // Build a map from participant name to DB id
-    const nameToId: Record<string, number> = {};
-    for (let i = 0; i < participants.length; i++) {
-      nameToId[participants[i].name] = participantIds[i];
-    }
+        // Insert participants and capture their DB ids
+        const participantIds: number[] = [];
+        for (const p of participants) {
+          const r = new sql.Request(transaction);
+          const result = await r
+            .input('drawId', sql.UniqueIdentifier, drawId)
+            .input('name', sql.NVarChar(200), p.name)
+            .input('email', sql.NVarChar(320), p.email || null)
+            .input('group_name', sql.NVarChar(200), p.group || null)
+            .query(
+              `INSERT INTO Participants (draw_id, name, email, group_name)
+               OUTPUT INSERTED.id
+               VALUES (@drawId, @name, @email, @group_name)`
+            );
+          participantIds.push(result.recordset[0].id);
+        }
 
-    // Insert matches
-    for (const match of matches) {
-      const r = new sql.Request(transaction);
-      await r
-        .input('drawId', sql.UniqueIdentifier, drawId)
-        .input('giverId', sql.Int, nameToId[match.giver.name])
-        .input('receiverId', sql.Int, nameToId[match.receiver.name])
-        .query(
-          `INSERT INTO Matches (draw_id, giver_participant_id, receiver_participant_id)
-           VALUES (@drawId, @giverId, @receiverId)`
-        );
-    }
+        // Build a map from participant name to DB id
+        const nameToId: Record<string, number> = {};
+        for (let i = 0; i < participants.length; i++) {
+          nameToId[participants[i].name] = participantIds[i];
+        }
 
-    await transaction.commit();
-    return res.status(200).json({ drawId });
+        // Insert matches
+        for (const match of matches) {
+          const r = new sql.Request(transaction);
+          await r
+            .input('drawId', sql.UniqueIdentifier, drawId)
+            .input('giverId', sql.Int, nameToId[match.giver.name])
+            .input('receiverId', sql.Int, nameToId[match.receiver.name])
+            .query(
+              `INSERT INTO Matches (draw_id, giver_participant_id, receiver_participant_id)
+               VALUES (@drawId, @giverId, @receiverId)`
+            );
+        }
+
+        await transaction.commit();
+        return { drawId };
+      } catch (err) {
+        await transaction.rollback();
+        throw err;
+      }
+    });
+    return res.status(200).json(result);
   } catch (err) {
-    await transaction.rollback();
     console.error(err);
     return res.status(500).json({ error: 'Database error. Please try again.' });
   }
