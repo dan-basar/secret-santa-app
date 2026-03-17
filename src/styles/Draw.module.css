@@ -85,7 +85,7 @@
 }
 
 .shareLabel {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -94,7 +94,7 @@
 }
 
 .shareUrl {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--ink-light);
   font-family: monospace;
   word-break: break-all;
@@ -133,7 +133,7 @@
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--ink-faint);
+  color: var(--ink);
   font-family: var(--font-sans);
 }
 
@@ -165,7 +165,7 @@
 .nameCell .email {
   display: block;
   font-size: 12px;
-  color: var(--ink-faint);
+  color: var(--ink-light);
 }
 
 .name {
@@ -175,7 +175,7 @@
 
 .email {
   font-size: 12px;
-  color: var(--ink-faint);
+  color: var(--ink-light);
 }
 
 .groupBadge {
