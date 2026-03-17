@@ -139,7 +139,7 @@ export default function Home() {
       <div className={styles.page}>
         <header className={styles.header}>
           <div className={styles.headerInner}>
-            <span className={styles.icon}>🎁</span>
+            <span className={styles.icon}>🎅🎁</span>
             <div>
               <h1 className={styles.title}>Secret Santa Picker App</h1>
               <p className={styles.subtitle}>Enter your groups and participants, then draw matches.</p>
