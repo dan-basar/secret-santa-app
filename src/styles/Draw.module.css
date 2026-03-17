@@ -222,7 +222,7 @@
   border-top: 1px solid var(--border);
   padding: 20px 24px;
   text-align: center;
-  font-size: 13px;
+  font-size: 18px;
 }
 
 @media (max-width: 600px) {
