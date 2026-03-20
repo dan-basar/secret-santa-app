@@ -220,7 +220,7 @@ export default function DrawPage() {
                   </colgroup>
                   <thead>
                     <tr>
-                      <th>Gifter</th>
+                      <th>SECRET SANTA</th>
                       {hasGroups && <th className={styles.groupCol}>Group</th>}
                       {hasGroups && <th className={styles.spacerCol} />}
                       <th>→ Gifting to</th>
