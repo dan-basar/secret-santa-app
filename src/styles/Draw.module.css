@@ -187,6 +187,10 @@
   padding: 0;
 }
 
+.mobileGroup {
+  display: none;
+}
+
 .groupBadge {
   display: inline-block;
   font-size: 11px;
@@ -238,6 +242,11 @@
   .groupCol,
   .spacerCol {
     display: none;
+  }
+
+  .mobileGroup {
+    display: block;
+    margin-top: 3px;
   }
 
   .shareBar {
