@@ -203,17 +203,28 @@ export default function DrawPage() {
               return (
                 <table className={styles.table}>
                   <colgroup>
-                    <col style={{ width: hasGroups ? '35%' : '50%' }} />
-                    {hasGroups && <col style={{ width: '15%' }} />}
-                    <col style={{ width: hasGroups ? '35%' : '50%' }} />
-                    {hasGroups && <col style={{ width: '15%' }} />}
+                    {hasGroups ? (
+                      <>
+                        <col />
+                        <col style={{ width: '1px' }} />
+                        <col style={{ width: '100%' }} />
+                        <col />
+                        <col style={{ width: '1px' }} />
+                      </>
+                    ) : (
+                      <>
+                        <col style={{ width: '50%' }} />
+                        <col style={{ width: '50%' }} />
+                      </>
+                    )}
                   </colgroup>
                   <thead>
                     <tr>
                       <th>Gifter</th>
-                      {hasGroups && <th>Group</th>}
+                      {hasGroups && <th className={styles.groupCol}>Group</th>}
+                      {hasGroups && <th className={styles.spacerCol} />}
                       <th>→ Gifting to</th>
-                      {hasGroups && <th>Group</th>}
+                      {hasGroups && <th className={styles.groupCol}>Group</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -224,17 +235,18 @@ export default function DrawPage() {
                           {m.giver_email && <span className={styles.email}>{m.giver_email}</span>}
                         </td>
                         {hasGroups && (
-                          <td>
+                          <td className={styles.groupCol}>
                             {m.giver_group
                               ? <span className={styles.groupBadge}>{m.giver_group}</span>
                               : <span className={styles.noGroup}>—</span>}
                           </td>
                         )}
+                        {hasGroups && <td className={styles.spacerCol} />}
                         <td className={styles.nameCell}>
                           <span className={styles.name}>{m.receiver_name}</span>
                         </td>
                         {hasGroups && (
-                          <td>
+                          <td className={styles.groupCol}>
                             {m.receiver_group
                               ? <span className={styles.groupBadge}>{m.receiver_group}</span>
                               : <span className={styles.noGroup}>—</span>}
