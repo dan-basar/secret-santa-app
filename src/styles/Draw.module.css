@@ -154,7 +154,7 @@
 
 .nameCell {
   display: table-cell;
-  min-width: 140px;
+  min-width: 175px;
 }
 
 .nameCell .name {
@@ -247,6 +247,10 @@
 }
 
 @media (max-width: 600px) {
+  .nameCell {
+    min-width: 140px;
+  }
+
   .groupCol,
   .spacerCol {
     display: none;
