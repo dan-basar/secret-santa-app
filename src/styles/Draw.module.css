@@ -129,7 +129,7 @@
 .table th {
   text-align: left;
   padding: 8px 12px 10px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -154,7 +154,7 @@
 
 .nameCell {
   display: table-cell;
-  min-width: 175px;
+  min-width: 185px;
 }
 
 .nameCell .name {
