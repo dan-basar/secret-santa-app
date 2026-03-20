@@ -140,7 +140,7 @@
 .table td {
   padding: 12px;
   border-bottom: 1px solid var(--border);
-  vertical-align: middle;
+  vertical-align: top;
   height: 100%;
 }
 
@@ -181,6 +181,7 @@
 
 .groupCol {
   white-space: nowrap;
+  min-width: 140px;
 }
 
 .spacerCol {

@@ -245,7 +245,7 @@ export default function DrawPage() {
                           <td className={styles.groupCol}>
                             {m.giver_group
                               ? <span className={styles.groupBadge}>{m.giver_group}</span>
-                              : <span className={styles.noGroup}>—</span>}
+                              : <span className={styles.noGroup}>No Group</span>}
                           </td>
                         )}
                         {hasGroups && <td className={styles.spacerCol} />}
@@ -263,7 +263,7 @@ export default function DrawPage() {
                           <td className={styles.groupCol}>
                             {m.receiver_group
                               ? <span className={styles.groupBadge}>{m.receiver_group}</span>
-                              : <span className={styles.noGroup}>—</span>}
+                              : <span className={styles.noGroup}>No Group</span>}
                           </td>
                         )}
                       </tr>
