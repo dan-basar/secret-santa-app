@@ -232,14 +232,14 @@ export default function DrawPage() {
                       <tr key={i}>
                         <td className={styles.nameCell}>
                           <span className={styles.name}>{m.giver_name}</span>
-                          {m.giver_email && <span className={styles.email}>{m.giver_email}</span>}
                           {hasGroups && (
                             <span className={styles.mobileGroup}>
                               {m.giver_group
-                                ? <span className={styles.groupBadge}>{m.giver_group}</span>
-                                : <span className={styles.noGroup}>—</span>}
+                                ? <span className={styles.groupBadge}>Group: {m.giver_group}</span>
+                                : <span className={styles.noGroup}>No Group</span>}
                             </span>
                           )}
+                          {m.giver_email && <span className={styles.email}>{m.giver_email}</span>}
                         </td>
                         {hasGroups && (
                           <td className={styles.groupCol}>
@@ -254,8 +254,8 @@ export default function DrawPage() {
                           {hasGroups && (
                             <span className={styles.mobileGroup}>
                               {m.receiver_group
-                                ? <span className={styles.groupBadge}>{m.receiver_group}</span>
-                                : <span className={styles.noGroup}>—</span>}
+                                ? <span className={styles.groupBadge}>Group: {m.receiver_group}</span>
+                                : <span className={styles.noGroup}>No Group</span>}
                             </span>
                           )}
                         </td>
