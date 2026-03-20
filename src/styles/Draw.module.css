@@ -210,7 +210,7 @@
   background: var(--paper-warm);
   border: 1px solid var(--border);
   border-radius: 100px;
-  color: var(--ink-faint);
+  color: var(--ink-light);
   white-space: nowrap;
 }
 
