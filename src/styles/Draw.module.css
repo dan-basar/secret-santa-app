@@ -154,6 +154,7 @@
 
 .nameCell {
   display: table-cell;
+  min-width: 140px;
 }
 
 .nameCell .name {
