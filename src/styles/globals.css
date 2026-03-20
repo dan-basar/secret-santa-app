@@ -172,6 +172,16 @@ input::placeholder {
   line-height: 1.5;
 }
 
+.status-msg {
+  font-size: 13px;
+  color: #4a6fa5;
+  background: #eaf0f8;
+  border: 1px solid #c0d3ec;
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  line-height: 1.5;
+}
+
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }

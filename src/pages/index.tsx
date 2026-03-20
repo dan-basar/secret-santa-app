@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import styles from '@/styles/Home.module.css';
@@ -34,6 +34,8 @@ export default function Home() {
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [statusMsg, setStatusMsg] = useState('');
+  const slowTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // --- Group handlers ---
   const addGroup = () => {
@@ -104,7 +106,12 @@ export default function Home() {
       group: p.group,
     }));
 
+    if (slowTimerRef.current) clearTimeout(slowTimerRef.current);
+    setStatusMsg('Randomizing...');
     setLoading(true);
+    slowTimerRef.current = setTimeout(() => {
+      setStatusMsg('Randomizing... Connection to the database is taking longer than usual, please stand by...');
+    }, 8000);
     try {
       const res = await fetch('/api/create-draw', {
         method: 'POST',
@@ -123,6 +130,8 @@ export default function Home() {
     } catch {
       setError('Network error. Please check your connection and try again.');
     } finally {
+      if (slowTimerRef.current) clearTimeout(slowTimerRef.current);
+      setStatusMsg('');
       setLoading(false);
     }
   }, [participants, router]);
@@ -252,6 +261,7 @@ export default function Home() {
             )}
           </section>
 
+          {statusMsg && <p className="status-msg fade-in">{statusMsg}</p>}
           {error && <p className="error-msg fade-in">{error}</p>}
 
           <div className={styles.submitRow}>
