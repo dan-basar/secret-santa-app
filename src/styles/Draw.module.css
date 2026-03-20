@@ -203,7 +203,14 @@
 }
 
 .noGroup {
+  display: inline-block;
+  font-size: 11px;
+  padding: 2px 8px;
+  background: var(--paper-warm);
+  border: 1px solid var(--border);
+  border-radius: 100px;
   color: var(--ink-faint);
+  white-space: nowrap;
 }
 
 .muted {
