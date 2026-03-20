@@ -9,15 +9,15 @@ const config: sql.config = {
     encrypt: true,
     trustServerCertificate: false,
   },
-  connectionTimeout: 5000,
-  requestTimeout: 5000,
+  connectionTimeout: 8000,
+  requestTimeout: 8000,
 };
 
 let pool: sql.ConnectionPool | null = null;
 
 export async function getPool(): Promise<sql.ConnectionPool> {
   if (pool && !pool.connected) {
-    pool = null;
+    resetPool();
   }
   if (!pool) {
     pool = await sql.connect(config);
@@ -26,7 +26,28 @@ export async function getPool(): Promise<sql.ConnectionPool> {
 }
 
 export function resetPool(): void {
-  pool = null;
+  if (pool) {
+    pool.close().catch(() => {});
+    pool = null;
+  }
+}
+
+export async function withRetry<T>(fn: () => Promise<T>, retries = 2): Promise<T> {
+  try {
+    return await fn();
+  } catch (err: any) {
+    if (retries > 0 && err.code === 'ETIMEOUT') {
+      console.warn('DB connection timed out, resetting pool and retrying...');
+      resetPool();
+      return withRetry(fn, retries - 1);
+    }
+    throw err;
+  }
+}
+
+export async function ping(): Promise<void> {
+  const p = await getPool();
+  await p.request().query('SELECT 1');
 }
 
 export { sql };
