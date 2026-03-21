@@ -32,7 +32,7 @@ export function resetPool(): void {
   }
 }
 
-export async function withRetry<T>(fn: () => Promise<T>, retries = 2): Promise<T> {
+export async function withRetry<T>(fn: () => Promise<T>, retries = 8): Promise<T> {
   try {
     return await fn();
   } catch (err: any) {
