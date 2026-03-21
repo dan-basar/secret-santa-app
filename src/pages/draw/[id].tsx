@@ -103,6 +103,22 @@ export default function DrawPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleEditAndRedraw = () => {
+    if (!draw) return;
+    const groups = [...new Set(draw.participants.map((p) => p.group_name).filter((g): g is string => g !== null))];
+    const participants = draw.participants.map((p) => ({
+      id: Math.random().toString(36).slice(2),
+      name: p.name,
+      email: p.email,
+      group: p.group_name ?? '',
+    }));
+    sessionStorage.setItem('editDraftData', JSON.stringify({
+      groups: groups.length > 0 ? groups : [''],
+      participants,
+    }));
+    router.push('/');
+  };
+
   if (state === 'loading') {
     return (
       <div className={styles.centered}>
@@ -193,7 +209,12 @@ export default function DrawPage() {
 
           {/* Matches table */}
           <section className={`card ${styles.section}`}>
-            <h2 className={styles.sectionTitle}>Matches</h2>
+            <div className={styles.matchesTitleRow}>
+              <h2 className={styles.sectionTitle} style={{ marginBottom: 0 }}>Matches</h2>
+              <button className="btn btn-secondary" onClick={handleEditAndRedraw}>
+                ← Edit &amp; Redraw
+              </button>
+            </div>
             <p className={styles.sectionDesc}>
               {draw.matches.length} participant{draw.matches.length !== 1 ? 's' : ''} — each person will give a gift to the person listed beside them.
             </p>

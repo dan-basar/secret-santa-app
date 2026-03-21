@@ -39,6 +39,17 @@ export default function Home() {
 
   useEffect(() => {
     fetch('/api/ping').catch(() => {});
+    const draft = sessionStorage.getItem('editDraftData');
+    if (draft) {
+      sessionStorage.removeItem('editDraftData');
+      try {
+        const { groups: g, participants: p } = JSON.parse(draft);
+        setGroups(g);
+        setParticipants(p);
+      } catch {
+        // ignore malformed data
+      }
+    }
   }, []);
 
   // --- Group handlers ---
