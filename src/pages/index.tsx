@@ -215,8 +215,8 @@ export default function Home() {
 
             <div className={styles.participantHeader}>
               <span>Name</span>
-              <span>Email</span>
               <span>Group</span>
+              <span>Email</span>
               <span />
             </div>
 
@@ -230,13 +230,6 @@ export default function Home() {
                     onChange={(e) => updateParticipant(p.id, 'name', e.target.value)}
                     maxLength={200}
                   />
-                  <input
-                    type="email"
-                    placeholder="email (optional)"
-                    value={p.email}
-                    onChange={(e) => updateParticipant(p.id, 'email', e.target.value)}
-                    maxLength={320}
-                  />
                   <select
                     value={p.group}
                     onChange={(e) => updateParticipant(p.id, 'group', e.target.value)}
@@ -246,6 +239,13 @@ export default function Home() {
                       <option key={g} value={g}>{g}</option>
                     ))}
                   </select>
+                  <input
+                    type="email"
+                    placeholder="email (optional)"
+                    value={p.email}
+                    onChange={(e) => updateParticipant(p.id, 'email', e.target.value)}
+                    maxLength={320}
+                  />
                   <button
                     className={`btn btn-secondary ${styles.removeBtn}`}
                     onClick={() => removeParticipant(p.id)}
