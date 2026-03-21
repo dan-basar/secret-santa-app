@@ -131,7 +131,7 @@
 
 .participantHeader {
   display: grid;
-  grid-template-columns: 1fr 1fr 160px 40px;
+  grid-template-columns: 1fr 140px 1fr 40px;
   gap: 8px;
   padding: 0 0 8px;
   font-size: 13px;
@@ -152,9 +152,10 @@
 
 .participantRow {
   display: grid;
-  grid-template-columns: 1fr 1fr 160px 40px;
+  grid-template-columns: 1fr 140px 1fr 40px;
   gap: 8px;
   align-items: center;
+  --mobile-indent: 32px;
 }
 
 .submitRow {
@@ -178,6 +179,13 @@
 }
 
 @media (max-width: 600px) {
+  .headerInner {
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    text-align: center;
+  }
+
   .participantHeader {
     display: none;
   }
@@ -188,8 +196,8 @@
   }
 
   .participantRow input:nth-child(1) { grid-column: 1; grid-row: 1; }
-  .participantRow input:nth-child(2) { grid-column: 1; grid-row: 2; }
-  .participantRow select { grid-column: 1; grid-row: 3; }
+  .participantRow select { grid-column: 1; grid-row: 2; margin-left: var(--mobile-indent); width: calc(100% - var(--mobile-indent)); }
+  .participantRow input:nth-child(3) { grid-column: 1; grid-row: 3; margin-left: var(--mobile-indent); width: calc(100% - var(--mobile-indent)); }
   .participantRow button { grid-column: 2; grid-row: 1; align-self: start; }
 }
 
