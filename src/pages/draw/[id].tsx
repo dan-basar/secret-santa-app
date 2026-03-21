@@ -105,7 +105,7 @@ export default function DrawPage() {
 
   const handleEditAndRedraw = () => {
     if (!draw) return;
-    const groups = [...new Set(draw.participants.map((p) => p.group_name).filter((g): g is string => g !== null))];
+    const groups = Array.from(new Set(draw.participants.map((p) => p.group_name).filter((g): g is string => g !== null)));
     const participants = draw.participants.map((p) => ({
       id: Math.random().toString(36).slice(2),
       name: p.name,
