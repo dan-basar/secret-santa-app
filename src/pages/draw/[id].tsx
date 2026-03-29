@@ -249,7 +249,15 @@ export default function DrawPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {draw.matches.map((m, i) => (
+                    {[...draw.matches].sort((a, b) => {
+                      const aGroup = a.giver_group || '';
+                      const bGroup = b.giver_group || '';
+                      if (aGroup && !bGroup) return -1;
+                      if (!aGroup && bGroup) return 1;
+                      const groupCmp = aGroup.localeCompare(bGroup);
+                      if (groupCmp !== 0) return groupCmp;
+                      return a.giver_name.localeCompare(b.giver_name);
+                    }).map((m, i) => (
                       <tr key={i}>
                         <td className={styles.nameCell}>
                           <span className={styles.name}>{m.giver_name}</span>
