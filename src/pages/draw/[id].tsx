@@ -108,8 +108,8 @@ export default function DrawPage() {
     const groups = Array.from(new Set(draw.participants.map((p) => p.group_name).filter((g): g is string => g !== null)));
     const participants = draw.participants.map((p) => ({
       id: Math.random().toString(36).slice(2),
-      name: p.name,
-      email: p.email,
+      name: p.name ?? '',
+      email: p.email ?? '',
       group: p.group_name ?? '',
     }));
     sessionStorage.setItem('editDraftData', JSON.stringify({
