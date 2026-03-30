@@ -41,7 +41,7 @@ export default function DrawPage() {
 
   useEffect(() => {
     if (!id) return;
-    fetch(`/api/get-draw?id=${id}`)
+    fetch(`${router.basePath}/api/get-draw?id=${id}`)
       .then(async (res) => {
         if (res.status === 410) { setState('deleted'); return; }
         if (res.status === 404) { setState('not-found'); return; }
@@ -58,7 +58,7 @@ export default function DrawPage() {
     setEmailLoading(true);
     setEmailError('');
     try {
-      const res = await fetch('/api/send-emails', {
+      const res = await fetch(`${router.basePath}/api/send-emails`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: draw.id }),
@@ -81,7 +81,7 @@ export default function DrawPage() {
     if (!draw) return;
     setDeleteLoading(true);
     try {
-      const res = await fetch('/api/delete-draw', {
+      const res = await fetch(`${router.basePath}/api/delete-draw`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: draw.id }),

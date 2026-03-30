@@ -7,7 +7,7 @@
   },
   "crons": [
     {
-      "path": "/api/health",
+      "path": "/secret-santa/api/health",
       "schedule": "0 17 * * *"
     }
   ]
