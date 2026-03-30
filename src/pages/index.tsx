@@ -38,7 +38,7 @@ export default function Home() {
   const slowTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    fetch('/api/ping').catch(() => {});
+    fetch(`${router.basePath}/api/ping`).catch(() => {});
     const draft = sessionStorage.getItem('editDraftData');
     if (draft) {
       sessionStorage.removeItem('editDraftData');
@@ -128,7 +128,7 @@ export default function Home() {
       setStatusMsg('Randomizing... Connection to the database is taking longer than usual, please stand by...');
     }, 8000);
     try {
-      const res = await fetch('/api/create-draw', {
+      const res = await fetch(`${router.basePath}/api/create-draw`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ participants: payload }),
