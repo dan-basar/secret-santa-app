@@ -321,7 +321,8 @@ export default function DrawPage() {
                 );
               }
 
-              const canSend = hasEmails && organizerName.trim().length > 0 && organizerEmail.trim().length > 0;
+              const organizerEmailInvalid = organizerEmail.trim().length > 0 && !/\S+@\S+\.\S+/.test(organizerEmail.trim());
+              const canSend = hasEmails && organizerName.trim().length > 0 && organizerEmail.trim().length > 0 && !organizerEmailInvalid;
 
               return (
                 <>
@@ -354,6 +355,9 @@ export default function DrawPage() {
                         placeholder="your@email.com"
                         disabled={emailLoading || emailSuccess}
                       />
+                      {organizerEmailInvalid && (
+                        <p className={styles.organizerFieldError}>Please enter a valid email address.</p>
+                      )}
                     </div>
                   </div>
                   {organizerName.trim() && (
