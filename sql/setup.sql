@@ -4,7 +4,9 @@ CREATE TABLE Draws (
   id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
   created_at DATETIME2 DEFAULT GETUTCDATE(),
   emails_sent_at DATETIME2 NULL,
-  deleted_at DATETIME2 NULL
+  deleted_at DATETIME2 NULL,
+  organizer_name NVARCHAR(200) NULL,
+  organizer_email NVARCHAR(320) NULL
 );
 
 CREATE TABLE Participants (

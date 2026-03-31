@@ -5,8 +5,10 @@ import { sendMatchEmail } from '@/lib/email';
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).end();
 
-  const { id } = req.body;
+  const { id, organizerName, organizerEmail } = req.body;
   if (!id || typeof id !== 'string') return res.status(400).end();
+  if (!organizerName || typeof organizerName !== 'string' || !organizerName.trim()) return res.status(400).json({ error: 'Organizer name is required.' });
+  if (!organizerEmail || typeof organizerEmail !== 'string' || !organizerEmail.trim()) return res.status(400).json({ error: 'Organizer email is required.' });
 
   try {
     const dbData = await withRetry(async () => {
@@ -49,7 +51,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       dbData.matches!
         .filter((match) => match.giver_email)
         .map((match) =>
-          sendMatchEmail(match.giver_name, match.giver_email, match.receiver_name)
+          sendMatchEmail(match.giver_name, match.giver_email, match.receiver_name, organizerName.trim(), organizerEmail.trim())
         )
     );
 
@@ -58,7 +60,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const r3 = new sql.Request(pool);
       await r3
         .input('drawId', sql.UniqueIdentifier, id)
-        .query(`UPDATE Draws SET emails_sent_at = GETUTCDATE() WHERE id = @drawId`);
+        .input('organizerName', sql.NVarChar(200), organizerName.trim())
+        .input('organizerEmail', sql.NVarChar(320), organizerEmail.trim())
+        .query(`UPDATE Draws SET emails_sent_at = GETUTCDATE(), organizer_name = @organizerName, organizer_email = @organizerEmail WHERE id = @drawId`);
     });
 
     return res.status(200).json({ success: true });

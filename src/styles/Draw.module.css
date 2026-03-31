@@ -227,6 +227,54 @@
   font-size: 14px;
 }
 
+.organizerFields {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.organizerField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.organizerLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.organizerInput {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  color: var(--ink);
+  background: white;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.organizerInput:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.organizerInput:disabled {
+  background: var(--paper);
+  color: var(--ink-light);
+}
+
+.organizerPreview {
+  font-size: 13px;
+  color: var(--ink-light);
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
 .dangerSection {
   border-color: #f0dcd8;
 }
@@ -267,6 +315,10 @@
   .mobileGroup {
     display: block;
     margin-top: 3px;
+  }
+
+  .organizerFields {
+    flex-direction: column;
   }
 
   .shareBar {

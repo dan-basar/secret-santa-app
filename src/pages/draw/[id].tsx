@@ -32,6 +32,8 @@ export default function DrawPage() {
   const [emailLoading, setEmailLoading] = useState(false);
   const [emailError, setEmailError] = useState('');
   const [emailSuccess, setEmailSuccess] = useState(false);
+  const [organizerName, setOrganizerName] = useState('');
+  const [organizerEmail, setOrganizerEmail] = useState('');
 
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
@@ -61,7 +63,7 @@ export default function DrawPage() {
       const res = await fetch(`${router.basePath}/api/send-emails`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: draw.id }),
+        body: JSON.stringify({ id: draw.id, organizerName: organizerName.trim(), organizerEmail: organizerEmail.trim() }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -319,6 +321,8 @@ export default function DrawPage() {
                 );
               }
 
+              const canSend = hasEmails && organizerName.trim().length > 0 && organizerEmail.trim().length > 0;
+
               return (
                 <>
                   <p className={styles.sectionDesc}>
@@ -326,6 +330,37 @@ export default function DrawPage() {
                       ? `Send each participant an email revealing who they drew. This can only be done once. ${emailCount} of ${draw.matches.length} participant${draw.matches.length !== 1 ? 's' : ''} have an email address.`
                       : 'No participants have an email address. Add emails to participants to enable this feature.'}
                   </p>
+                  <div className={styles.organizerFields}>
+                    <div className={styles.organizerField}>
+                      <label className={styles.organizerLabel} htmlFor="organizerName">Organizer Name</label>
+                      <input
+                        id="organizerName"
+                        type="text"
+                        className={styles.organizerInput}
+                        value={organizerName}
+                        onChange={(e) => setOrganizerName(e.target.value)}
+                        placeholder="Your name"
+                        disabled={emailLoading || emailSuccess}
+                      />
+                    </div>
+                    <div className={styles.organizerField}>
+                      <label className={styles.organizerLabel} htmlFor="organizerEmail">Organizer Email</label>
+                      <input
+                        id="organizerEmail"
+                        type="email"
+                        className={styles.organizerInput}
+                        value={organizerEmail}
+                        onChange={(e) => setOrganizerEmail(e.target.value)}
+                        placeholder="your@email.com"
+                        disabled={emailLoading || emailSuccess}
+                      />
+                    </div>
+                  </div>
+                  {organizerName.trim() && (
+                    <p className={styles.organizerPreview}>
+                      Preview: <em>&ldquo;This secret message was sent by <strong>{organizerName.trim()}</strong>.&rdquo;</em>
+                    </p>
+                  )}
                   {emailError && <p className="error-msg" style={{ marginBottom: 12 }}>{emailError}</p>}
                   {emailSuccess && (
                     <p className="success-msg" style={{ marginBottom: 12 }}>
@@ -335,8 +370,8 @@ export default function DrawPage() {
                   <button
                     className="btn btn-success"
                     onClick={handleSendEmails}
-                    disabled={emailLoading || emailSuccess || !hasEmails}
-                    title={!hasEmails ? 'No participants have an email address' : undefined}
+                    disabled={emailLoading || emailSuccess || !canSend}
+                    title={!hasEmails ? 'No participants have an email address' : !organizerName.trim() || !organizerEmail.trim() ? 'Enter your name and email to send' : undefined}
                   >
                     {emailLoading ? 'Sending…' : `📧 Send emails to ${emailCount} participant${emailCount !== 1 ? 's' : ''}`}
                   </button>
