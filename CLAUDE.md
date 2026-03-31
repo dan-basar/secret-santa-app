@@ -55,6 +55,12 @@ npm run build    # Production build
 npm run start    # Serve production build
 ```
 
+**Always prefix `npm run dev` with the appropriate `cd` command:**
+
+```bash
+cd /home/user/secret-santa-app && npm run dev
+```
+
 There is no test runner configured. There is no linter configured beyond TypeScript strict mode.
 
 ## Environment Variables
