@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
@@ -39,7 +39,17 @@ export default function DrawPage() {
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleted, setDeleted] = useState(false);
 
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    (window as any).onTurnstileSuccess = (token: string) => {
+      setTurnstileToken(token);
+    };
+    return () => {
+      delete (window as any).onTurnstileSuccess;
+    };
+  }, []);
 
   useEffect(() => {
     if (!id) return;
@@ -63,17 +73,21 @@ export default function DrawPage() {
       const res = await fetch(`${router.basePath}/api/send-emails`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: draw.id, organizerName: organizerName.trim(), organizerEmail: organizerEmail.trim() }),
+        body: JSON.stringify({ id: draw.id, organizerName: organizerName.trim(), organizerEmail: organizerEmail.trim(), turnstileToken }),
       });
       const data = await res.json();
       if (!res.ok) {
         setEmailError(data.error || 'Failed to send emails.');
+        if ((window as any).turnstile) (window as any).turnstile.reset();
+        setTurnstileToken(null);
       } else {
         setEmailSuccess(true);
         setDraw((d) => d ? { ...d, emails_sent_at: new Date().toISOString() } : d);
       }
     } catch {
       setEmailError('Network error. Please try again.');
+      if ((window as any).turnstile) (window as any).turnstile.reset();
+      setTurnstileToken(null);
     } finally {
       setEmailLoading(false);
     }
@@ -187,6 +201,7 @@ export default function DrawPage() {
     <>
       <Head>
         <title>Draw results — Secret Santa Picker</title>
+        <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
       </Head>
 
       <div className={styles.page}>
@@ -371,14 +386,21 @@ export default function DrawPage() {
                       ✓ Emails sent successfully!
                     </p>
                   )}
-                  <button
-                    className="btn btn-success"
-                    onClick={handleSendEmails}
-                    disabled={emailLoading || emailSuccess || !canSend}
-                    title={!hasEmails ? 'No participants have an email address' : !organizerName.trim() || !organizerEmail.trim() ? 'Enter your name and email to send' : undefined}
-                  >
-                    {emailLoading ? 'Sending…' : `📧 Send emails to ${emailCount} participant${emailCount !== 1 ? 's' : ''}`}
-                  </button>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+                    <div
+                      className="cf-turnstile"
+                      data-sitekey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+                      data-callback="onTurnstileSuccess"
+                    />
+                    <button
+                      className="btn btn-success"
+                      onClick={handleSendEmails}
+                      disabled={emailLoading || emailSuccess || !canSend || !turnstileToken}
+                      title={!hasEmails ? 'No participants have an email address' : !organizerName.trim() || !organizerEmail.trim() ? 'Enter your name and email to send' : undefined}
+                    >
+                      {emailLoading ? 'Sending…' : `📧 Send emails to ${emailCount} participant${emailCount !== 1 ? 's' : ''}`}
+                    </button>
+                  </div>
                 </>
               );
             })()}
