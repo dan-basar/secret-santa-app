@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { v4 as uuidv4 } from 'uuid';
 import { getPool, withRetry, sql } from '@/lib/db';
 import { isMatchingPossible, createMatches, Participant } from '@/lib/matching';
+import { stripHtml } from '@/lib/sanitize';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).end();
@@ -13,6 +14,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
   if (participants.length > 50) {
     return res.status(400).json({ error: 'Maximum 50 participants allowed.' });
+  }
+
+  // Sanitize all user-provided text inputs
+  for (const p of participants) {
+    p.name = stripHtml(p.name);
+    p.email = p.email ? p.email.trim().toLowerCase() : '';
+    p.group = p.group ? stripHtml(p.group) : '';
+  }
+
+  // Re-validate after sanitization (names could become empty after stripping tags)
+  const emptyNames = participants.filter(p => !p.name);
+  if (emptyNames.length > 0) {
+    return res.status(400).json({ error: 'All participants must have a valid name (HTML is not allowed).' });
+  }
+
+  // Validate email format if provided
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const invalidEmails = participants.filter(p => p.email && !emailRegex.test(p.email));
+  if (invalidEmails.length > 0) {
+    return res.status(400).json({
+      error: `Invalid email address for: ${invalidEmails.map(p => p.name).join(', ')}`,
+    });
   }
 
   const check = isMatchingPossible(participants);

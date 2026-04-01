@@ -5,10 +5,33 @@ import { sendMatchEmail } from '@/lib/email';
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).end();
 
-  const { id, organizerName, organizerEmail } = req.body;
+  const { id, organizerName, organizerEmail, turnstileToken } = req.body;
   if (!id || typeof id !== 'string') return res.status(400).end();
   if (!organizerName || typeof organizerName !== 'string' || !organizerName.trim()) return res.status(400).json({ error: 'Organizer name is required.' });
   if (!organizerEmail || typeof organizerEmail !== 'string' || !organizerEmail.trim()) return res.status(400).json({ error: 'Organizer email is required.' });
+
+  // Verify Turnstile token
+  if (!turnstileToken) {
+    return res.status(400).json({ error: 'CAPTCHA verification required.' });
+  }
+
+  const turnstileResponse = await fetch(
+    'https://challenges.cloudflare.com/turnstile/v0/siteverify',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        secret: process.env.TURNSTILE_SECRET_KEY,
+        response: turnstileToken,
+      }),
+    }
+  );
+
+  const turnstileResult = await turnstileResponse.json();
+
+  if (!turnstileResult.success) {
+    return res.status(403).json({ error: 'CAPTCHA verification failed.' });
+  }
 
   try {
     const dbData = await withRetry(async () => {
@@ -47,25 +70,65 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (dbData.draw.emails_sent_at) return res.status(409).json({ error: 'Emails have already been sent for this draw.' });
 
-    await Promise.all(
-      dbData.matches!
-        .filter((match) => match.giver_email)
-        .map((match) =>
-          sendMatchEmail(match.giver_name, match.giver_email, match.receiver_name, organizerName.trim(), organizerEmail.trim())
-        )
-    );
-
+    // Step 1: Optimistically mark emails as sent BEFORE sending
     await withRetry(async () => {
       const pool = await getPool();
-      const r3 = new sql.Request(pool);
-      await r3
+      const rUpdate = new sql.Request(pool);
+      await rUpdate
         .input('drawId', sql.UniqueIdentifier, id)
         .input('organizerName', sql.NVarChar(200), organizerName.trim())
         .input('organizerEmail', sql.NVarChar(320), organizerEmail.trim())
-        .query(`UPDATE Draws SET emails_sent_at = GETUTCDATE(), organizer_name = @organizerName, organizer_email = @organizerEmail WHERE id = @drawId`);
+        .query(`
+          UPDATE Draws
+          SET emails_sent_at = GETUTCDATE(), organizer_name = @organizerName, organizer_email = @organizerEmail
+          WHERE id = @drawId AND emails_sent_at IS NULL
+        `);
     });
 
-    return res.status(200).json({ success: true });
+    // Step 2: Verify the update succeeded (optimistic lock)
+    const lockCheck = await withRetry(async () => {
+      const pool = await getPool();
+      const rCheck = new sql.Request(pool);
+      const checkResult = await rCheck
+        .input('drawId', sql.UniqueIdentifier, id)
+        .query(`SELECT emails_sent_at FROM Draws WHERE id = @drawId`);
+      return checkResult.recordset[0];
+    });
+
+    if (!lockCheck?.emails_sent_at) {
+      return res.status(500).json({ error: 'Failed to lock draw for email sending.' });
+    }
+
+    // Step 3: Send the emails
+    const toSend = dbData.matches!.filter((match: any) => match.giver_email);
+
+    const results = await Promise.allSettled(
+      toSend.map((match: any) =>
+        sendMatchEmail(match.giver_name, match.giver_email, match.receiver_name, organizerName.trim(), organizerEmail.trim())
+      )
+    );
+
+    // Step 4: Check results
+    const failures = results.filter(r => r.status === 'rejected');
+
+    if (failures.length > 0 && failures.length === toSend.length) {
+      // ALL emails failed — roll back the timestamp so user can retry
+      await withRetry(async () => {
+        const pool = await getPool();
+        const rRollback = new sql.Request(pool);
+        await rRollback
+          .input('drawId', sql.UniqueIdentifier, id)
+          .query(`UPDATE Draws SET emails_sent_at = NULL WHERE id = @drawId`);
+      });
+
+      return res.status(500).json({ error: 'Failed to send emails. Please try again.' });
+    }
+
+    return res.status(200).json({
+      success: true,
+      totalSent: toSend.length - failures.length,
+      totalFailed: failures.length,
+    });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: 'Failed to send emails. Please try again.' });
