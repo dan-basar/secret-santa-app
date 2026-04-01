@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getPool, withRetry, sql } from '@/lib/db';
 import { sendMatchEmail } from '@/lib/email';
+import { stripHtml } from '@/lib/sanitize';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).end();
@@ -9,6 +10,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (!id || typeof id !== 'string') return res.status(400).end();
   if (!organizerName || typeof organizerName !== 'string' || !organizerName.trim()) return res.status(400).json({ error: 'Organizer name is required.' });
   if (!organizerEmail || typeof organizerEmail !== 'string' || !organizerEmail.trim()) return res.status(400).json({ error: 'Organizer email is required.' });
+
+  // Sanitize organizer inputs to prevent HTML injection in emails
+  const safeOrganizerName = stripHtml(organizerName);
+  const safeOrganizerEmail = organizerEmail.trim().toLowerCase();
+
+  if (!safeOrganizerName) return res.status(400).json({ error: 'Organizer name must contain valid text (HTML is not allowed).' });
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(safeOrganizerEmail)) return res.status(400).json({ error: 'Invalid organizer email format.' });
 
   // Verify Turnstile token
   if (!turnstileToken) {
@@ -76,8 +86,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const rUpdate = new sql.Request(pool);
       await rUpdate
         .input('drawId', sql.UniqueIdentifier, id)
-        .input('organizerName', sql.NVarChar(200), organizerName.trim())
-        .input('organizerEmail', sql.NVarChar(320), organizerEmail.trim())
+        .input('organizerName', sql.NVarChar(200), safeOrganizerName)
+        .input('organizerEmail', sql.NVarChar(320), safeOrganizerEmail)
         .query(`
           UPDATE Draws
           SET emails_sent_at = GETUTCDATE(), organizer_name = @organizerName, organizer_email = @organizerEmail
@@ -104,7 +114,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const results = await Promise.allSettled(
       toSend.map((match: any) =>
-        sendMatchEmail(match.giver_name, match.giver_email, match.receiver_name, organizerName.trim(), organizerEmail.trim())
+        sendMatchEmail(match.giver_name, match.giver_email, match.receiver_name, safeOrganizerName, safeOrganizerEmail)
       )
     );
 
