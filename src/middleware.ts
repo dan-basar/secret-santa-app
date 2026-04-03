@@ -58,8 +58,11 @@ const RATE_LIMITS: Record<string, { limit: number; windowMs: number }> = {
 
 const BASE_PATH = '/secret-santa';
 
-// IPs exempt from rate limiting (e.g. developer IPs for testing)
-const WHITELISTED_IPS = new Set(['71.79.252.160']);
+// IPs exempt from rate limiting — loaded from RATE_LIMIT_IP_WHITELIST env var
+// (comma-separated, e.g. "1.2.3.4,5.6.7.8"). Set in .env.local, never commit IPs.
+const WHITELISTED_IPS = new Set(
+  (process.env.RATE_LIMIT_IP_WHITELIST ?? '').split(',').map(s => s.trim()).filter(Boolean)
+);
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
