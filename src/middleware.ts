@@ -58,6 +58,9 @@ const RATE_LIMITS: Record<string, { limit: number; windowMs: number }> = {
 
 const BASE_PATH = '/secret-santa';
 
+// IPs exempt from rate limiting (e.g. developer IPs for testing)
+const WHITELISTED_IPS = new Set(['71.79.252.160']);
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   // Normalize: strip basePath if present (request.nextUrl.pathname includes it)
@@ -75,6 +78,10 @@ export function middleware(request: NextRequest) {
     request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
     request.headers.get('x-real-ip') ||
     'unknown';
+
+  if (WHITELISTED_IPS.has(ip)) {
+    return NextResponse.next();
+  }
 
   const key = `${ip}:${apiPath}`;
   const allowed = rateLimit(key, config.limit, config.windowMs);
