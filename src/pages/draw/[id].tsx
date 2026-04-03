@@ -161,7 +161,7 @@ export default function DrawPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleEditAndRedraw = () => {
+  const handleEditAndRedraw = async () => {
     if (!draw) return;
     const groups = Array.from(new Set(draw.participants.map((p) => p.group_name).filter((g): g is string => g !== null)));
     const participants = draw.participants.map((p) => ({
@@ -174,6 +174,15 @@ export default function DrawPage() {
       groups: groups.length > 0 ? groups : [''],
       participants,
     }));
+    try {
+      await fetch(`${router.basePath}/api/delete-draw`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: draw.id }),
+      });
+    } catch {
+      // non-blocking — proceed to home regardless
+    }
     router.push('/');
   };
 
