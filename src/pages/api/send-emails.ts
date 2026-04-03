@@ -100,7 +100,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
-    // Step 3: Optimistically mark emails as sent BEFORE sending
+    // Step 2: Optimistically mark emails as sent BEFORE sending
     await withRetry(async () => {
       const pool = await getPool();
       const rUpdate = new sql.Request(pool);
@@ -115,7 +115,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         `);
     });
 
-    // Step 4: Verify the update succeeded (optimistic lock)
+    // Step 3: Verify the update succeeded (optimistic lock)
     const lockCheck = await withRetry(async () => {
       const pool = await getPool();
       const rCheck = new sql.Request(pool);
@@ -129,14 +129,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(500).json({ error: 'Failed to lock draw for email sending.' });
     }
 
-    // Step 5: Send the emails
+    // Step 4: Send the emails
     const results = await Promise.allSettled(
       toSend.map((match: any) =>
         sendMatchEmail(match.giver_name, match.giver_email, match.receiver_name, safeOrganizerName, safeOrganizerEmail)
       )
     );
 
-    // Step 6: Check results
+    // Step 5: Check results
     const failures = results.filter(r => r.status === 'rejected');
 
     if (failures.length > 0 && failures.length === toSend.length) {
@@ -152,7 +152,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(500).json({ error: 'Failed to send emails. Please try again.' });
     }
 
-    // Step 7: Record successfully sent emails in the daily counter
+    // Step 6: Record successfully sent emails in the daily counter
     const actualSent = toSend.length - failures.length;
     await withRetry(async () => {
       const pool = await getPool();
