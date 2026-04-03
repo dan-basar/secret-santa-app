@@ -141,7 +141,7 @@ export default function Home() {
         return;
       }
 
-      router.push(`/draw/${data.drawId}`);
+      router.push(`/draw/${data.drawId}?key=${data.adminKey}`);
     } catch {
       setError('Network error. Please check your connection and try again.');
     } finally {

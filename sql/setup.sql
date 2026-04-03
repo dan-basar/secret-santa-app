@@ -6,7 +6,8 @@ CREATE TABLE Draws (
   emails_sent_at DATETIME2 NULL,
   deleted_at DATETIME2 NULL,
   organizer_name NVARCHAR(200) NULL,
-  organizer_email NVARCHAR(320) NULL
+  organizer_email NVARCHAR(320) NULL,
+  admin_key NVARCHAR(100) NULL
 );
 
 CREATE TABLE Participants (
