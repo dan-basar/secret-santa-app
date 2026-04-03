@@ -68,7 +68,12 @@ export default function DrawPage() {
     } else {
       // Script is still loading — fire render once it finishes.
       scriptEl = document.querySelector('script[src*="turnstile"]') as HTMLScriptElement | null;
-      if (scriptEl) scriptEl.addEventListener('load', render, { once: true });
+      if (scriptEl) {
+        scriptEl.addEventListener('load', render, { once: true });
+        // Fallback: if the script finished loading between our window.turnstile
+        // check above and attaching the listener, the load event won't fire again.
+        if ((window as any).turnstile) render();
+      }
     }
 
     return () => {
