@@ -27,3 +27,8 @@ CREATE TABLE Matches (
 CREATE INDEX IX_Participants_DrawId ON Participants(draw_id);
 CREATE INDEX IX_Matches_DrawId ON Matches(draw_id);
 
+CREATE TABLE DailyEmailLog (
+  log_date DATE PRIMARY KEY,
+  emails_sent INT NOT NULL DEFAULT 0
+);
+

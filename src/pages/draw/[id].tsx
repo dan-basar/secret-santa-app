@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
@@ -42,14 +42,48 @@ export default function DrawPage() {
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
+  const turnstileContainerRef = useRef<HTMLDivElement>(null);
+  const turnstileWidgetId = useRef<string | null>(null);
+
+  // Explicitly render the Turnstile widget once the email form is visible.
+  // We cannot rely on Turnstile's auto-scan (which only fires once on script load)
+  // because the .cf-turnstile container doesn't exist yet when the script first executes —
+  // the page is still in "loading" state at that point.
   useEffect(() => {
-    (window as any).onTurnstileSuccess = (token: string) => {
-      setTurnstileToken(token);
+    if (state !== 'loaded' || draw?.emails_sent_at) return;
+
+    let scriptEl: HTMLScriptElement | null = null;
+
+    const render = () => {
+      if (!turnstileContainerRef.current || !(window as any).turnstile) return;
+      if (turnstileWidgetId.current !== null) return; // already rendered
+      turnstileWidgetId.current = (window as any).turnstile.render(turnstileContainerRef.current, {
+        sitekey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
+        callback: (token: string) => setTurnstileToken(token),
+      });
     };
+
+    if ((window as any).turnstile) {
+      render();
+    } else {
+      // Script is still loading — fire render once it finishes.
+      scriptEl = document.querySelector('script[src*="turnstile"]') as HTMLScriptElement | null;
+      if (scriptEl) {
+        scriptEl.addEventListener('load', render, { once: true });
+        // Fallback: if the script finished loading between our window.turnstile
+        // check above and attaching the listener, the load event won't fire again.
+        if ((window as any).turnstile) render();
+      }
+    }
+
     return () => {
-      delete (window as any).onTurnstileSuccess;
+      if (scriptEl) scriptEl.removeEventListener('load', render);
+      if (turnstileWidgetId.current !== null && (window as any).turnstile) {
+        (window as any).turnstile.remove(turnstileWidgetId.current);
+        turnstileWidgetId.current = null;
+      }
     };
-  }, []);
+  }, [state, draw?.emails_sent_at]);
 
   useEffect(() => {
     if (!id) return;
@@ -201,7 +235,6 @@ export default function DrawPage() {
     <>
       <Head>
         <title>Draw results — Secret Santa Picker</title>
-        <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
       </Head>
 
       <div className={styles.page}>
@@ -387,11 +420,7 @@ export default function DrawPage() {
                     </p>
                   )}
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-                    <div
-                      className="cf-turnstile"
-                      data-sitekey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
-                      data-callback="onTurnstileSuccess"
-                    />
+                    <div ref={turnstileContainerRef} />
                     <button
                       className="btn btn-success"
                       onClick={handleSendEmails}
