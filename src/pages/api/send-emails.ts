@@ -3,6 +3,8 @@ import { getPool, withRetry, sql } from '@/lib/db';
 import { sendMatchEmail } from '@/lib/email';
 import { stripHtml } from '@/lib/sanitize';
 
+const DAILY_EMAIL_LIMIT = 495;
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).end();
 
@@ -80,7 +82,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (dbData.draw.emails_sent_at) return res.status(409).json({ error: 'Emails have already been sent for this draw.' });
 
-    // Step 1: Optimistically mark emails as sent BEFORE sending
+    // Step 1: Check global daily email cap
+    const toSend = dbData.matches!.filter((match: any) => match.giver_email);
+
+    const dailyCount = await withRetry(async () => {
+      const pool = await getPool();
+      const rCap = new sql.Request(pool);
+      const capResult = await rCap.query(
+        `SELECT ISNULL(emails_sent, 0) AS emails_sent FROM DailyEmailLog WHERE log_date = CAST(GETUTCDATE() AS DATE)`
+      );
+      return (capResult.recordset[0]?.emails_sent ?? 0) as number;
+    });
+
+    if (dailyCount + toSend.length > DAILY_EMAIL_LIMIT) {
+      return res.status(503).json({
+        error: `The daily email limit of ${DAILY_EMAIL_LIMIT} has been reached. Please try again tomorrow.`,
+      });
+    }
+
+    // Step 3: Optimistically mark emails as sent BEFORE sending
     await withRetry(async () => {
       const pool = await getPool();
       const rUpdate = new sql.Request(pool);
@@ -95,7 +115,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         `);
     });
 
-    // Step 2: Verify the update succeeded (optimistic lock)
+    // Step 4: Verify the update succeeded (optimistic lock)
     const lockCheck = await withRetry(async () => {
       const pool = await getPool();
       const rCheck = new sql.Request(pool);
@@ -109,20 +129,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(500).json({ error: 'Failed to lock draw for email sending.' });
     }
 
-    // Step 3: Send the emails
-    const toSend = dbData.matches!.filter((match: any) => match.giver_email);
-
+    // Step 5: Send the emails
     const results = await Promise.allSettled(
       toSend.map((match: any) =>
         sendMatchEmail(match.giver_name, match.giver_email, match.receiver_name, safeOrganizerName, safeOrganizerEmail)
       )
     );
 
-    // Step 4: Check results
+    // Step 6: Check results
     const failures = results.filter(r => r.status === 'rejected');
 
     if (failures.length > 0 && failures.length === toSend.length) {
-      // ALL emails failed — roll back the timestamp so user can retry
+      // ALL emails failed — roll back the timestamp so user can retry (don't log to daily counter)
       await withRetry(async () => {
         const pool = await getPool();
         const rRollback = new sql.Request(pool);
@@ -134,9 +152,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(500).json({ error: 'Failed to send emails. Please try again.' });
     }
 
+    // Step 7: Record successfully sent emails in the daily counter
+    const actualSent = toSend.length - failures.length;
+    await withRetry(async () => {
+      const pool = await getPool();
+      const rLog = new sql.Request(pool);
+      await rLog
+        .input('count', sql.Int, actualSent)
+        .query(`
+          MERGE DailyEmailLog WITH (HOLDLOCK) AS target
+          USING (SELECT CAST(GETUTCDATE() AS DATE) AS log_date) AS source
+          ON target.log_date = source.log_date
+          WHEN MATCHED THEN UPDATE SET emails_sent = emails_sent + @count
+          WHEN NOT MATCHED THEN INSERT (log_date, emails_sent) VALUES (source.log_date, @count);
+        `);
+    });
+
     return res.status(200).json({
       success: true,
-      totalSent: toSend.length - failures.length,
+      totalSent: actualSent,
       totalFailed: failures.length,
     });
   } catch (err) {
