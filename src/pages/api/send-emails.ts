@@ -3,6 +3,7 @@ import { getPool, withRetry, sql } from '@/lib/db';
 import { sendMatchEmail } from '@/lib/email';
 import { stripHtml } from '@/lib/sanitize';
 
+// Gmail's free SMTP plan allows ~500 emails/day; 495 gives a 5-email safety margin
 const DAILY_EMAIL_LIMIT = 495;
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -57,6 +58,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (!drawResult.recordset.length) return null;
 
       const draw = drawResult.recordset[0];
+      // Short-circuit: if the draw is already sent or deleted, return early
+      // without fetching matches (we'll reject below anyway)
       if (draw.deleted_at || draw.emails_sent_at) return { draw, matches: null };
 
       const r2 = new sql.Request(pool);
@@ -100,7 +103,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
-    // Step 2: Optimistically mark emails as sent BEFORE sending
+    // Step 2: Optimistically mark emails as sent BEFORE sending.
+    //
+    // This prevents two concurrent requests from both passing the cap check above
+    // and both sending a full set of emails. The WHERE clause makes the UPDATE
+    // atomic: only the first request to reach this point will update the row
+    // (because emails_sent_at will be non-null for any subsequent request).
     await withRetry(async () => {
       const pool = await getPool();
       const rUpdate = new sql.Request(pool);
@@ -115,7 +123,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         `);
     });
 
-    // Step 3: Verify the update succeeded (optimistic lock)
+    // Step 3: Verify the update succeeded (optimistic lock check).
+    // If emails_sent_at is still null, a concurrent request beat us to it.
     const lockCheck = await withRetry(async () => {
       const pool = await getPool();
       const rCheck = new sql.Request(pool);
@@ -129,7 +138,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(500).json({ error: 'Failed to lock draw for email sending.' });
     }
 
-    // Step 4: Send the emails
+    // Step 4: Send the emails.
+    // allSettled (rather than all) lets us attempt every email even if some fail,
+    // so partial delivery is possible.
     const results = await Promise.allSettled(
       toSend.map((match: any) =>
         sendMatchEmail(match.giver_name, match.giver_email, match.receiver_name, safeOrganizerName, safeOrganizerEmail)
@@ -140,7 +151,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const failures = results.filter(r => r.status === 'rejected');
 
     if (failures.length > 0 && failures.length === toSend.length) {
-      // ALL emails failed — roll back the timestamp so user can retry (don't log to daily counter)
+      // ALL emails failed — roll back the timestamp so the user can retry.
+      // We don't roll back on partial failure: some recipients already received
+      // their email, so re-sending to everyone would cause duplicates.
       await withRetry(async () => {
         const pool = await getPool();
         const rRollback = new sql.Request(pool);
@@ -152,7 +165,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(500).json({ error: 'Failed to send emails. Please try again.' });
     }
 
-    // Step 6: Record successfully sent emails in the daily counter
+    // Step 6: Record successfully sent emails in the daily counter.
+    // MERGE with HOLDLOCK prevents a race condition where two concurrent requests
+    // on the same UTC date both find no existing row and both try to INSERT —
+    // HOLDLOCK forces the second request to wait and hit the UPDATE branch instead.
     const actualSent = toSend.length - failures.length;
     await withRetry(async () => {
       const pool = await getPool();
