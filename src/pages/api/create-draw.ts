@@ -49,6 +49,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   const drawId = uuidv4();
+  const adminKey = uuidv4();
 
   try {
     const result = await withRetry(async () => {
@@ -60,9 +61,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         // Insert draw
         const r0 = new sql.Request(transaction);
-        await r0.input('drawId', sql.UniqueIdentifier, drawId).query(
-          `INSERT INTO Draws (id) VALUES (@drawId)`
-        );
+        await r0
+          .input('drawId', sql.UniqueIdentifier, drawId)
+          .input('adminKey', sql.NVarChar(100), adminKey)
+          .query(`INSERT INTO Draws (id, admin_key) VALUES (@drawId, @adminKey)`);
 
         // Insert participants and capture their DB ids
         const participantIds: number[] = [];
@@ -101,7 +103,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
 
         await transaction.commit();
-        return { drawId };
+        return { drawId, adminKey };
       } catch (err) {
         await transaction.rollback();
         throw err;

@@ -4,7 +4,7 @@ import { getPool, withRetry, sql } from '@/lib/db';
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') return res.status(405).end();
 
-  const { id } = req.query;
+  const { id, key } = req.query;
   if (!id || typeof id !== 'string') return res.status(400).end();
 
   try {
@@ -14,7 +14,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const r1 = new sql.Request(pool);
       const drawResult = await r1
         .input('drawId', sql.UniqueIdentifier, id)
-        .query(`SELECT id, created_at, emails_sent_at, deleted_at FROM Draws WHERE id = @drawId`);
+        .query(`SELECT id, created_at, emails_sent_at, deleted_at, admin_key FROM Draws WHERE id = @drawId`);
 
       if (!drawResult.recordset.length) return null;
 
@@ -48,12 +48,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (data.draw.deleted_at) return res.status(410).json({ deleted: true });
 
+    const isAdmin = typeof key === 'string' && key === data.draw.admin_key;
+    const participantsWithEmailCount = data.participants.filter((p: { email: string | null }) => p.email).length;
+
+    const participants = isAdmin
+      ? data.participants
+      : data.participants.map(({ email: _email, ...rest }: { email: string | null; [k: string]: unknown }) => rest);
+
+    const matches = isAdmin
+      ? data.matches
+      : data.matches.map(({ giver_email: _ge, ...rest }: { giver_email: string | null; [k: string]: unknown }) => rest);
+
     return res.status(200).json({
       id: data.draw.id,
       created_at: data.draw.created_at,
       emails_sent_at: data.draw.emails_sent_at,
-      participants: data.participants,
-      matches: data.matches,
+      isAdmin,
+      participantsWithEmailCount,
+      participants,
+      matches,
     });
   } catch (err) {
     console.error(err);

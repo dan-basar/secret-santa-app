@@ -6,7 +6,7 @@ import styles from '@/styles/Draw.module.css';
 
 interface Match {
   giver_name: string;
-  giver_email: string;
+  giver_email?: string;
   giver_group: string | null;
   receiver_name: string;
   receiver_group: string | null;
@@ -16,7 +16,9 @@ interface DrawData {
   id: string;
   created_at: string;
   emails_sent_at: string | null;
-  participants: Array<{ name: string; email: string; group_name: string | null }>;
+  isAdmin: boolean;
+  participantsWithEmailCount: number;
+  participants: Array<{ name: string; email?: string; group_name: string | null }>;
   matches: Match[];
 }
 
@@ -87,7 +89,9 @@ export default function DrawPage() {
 
   useEffect(() => {
     if (!id) return;
-    fetch(`${router.basePath}/api/get-draw?id=${id}`)
+    const key = router.query.key;
+    const keyParam = key ? `&key=${encodeURIComponent(key as string)}` : '';
+    fetch(`${router.basePath}/api/get-draw?id=${id}${keyParam}`)
       .then(async (res) => {
         if (res.status === 410) { setState('deleted'); return; }
         if (res.status === 404) { setState('not-found'); return; }
@@ -97,7 +101,7 @@ export default function DrawPage() {
         setState('loaded');
       })
       .catch(() => setState('error'));
-  }, [id]);
+  }, [id, router.query.key]);
 
   const handleSendEmails = async () => {
     if (!draw) return;
@@ -147,8 +151,12 @@ export default function DrawPage() {
     }
   };
 
+  const shareableUrl = typeof window !== 'undefined'
+    ? `${window.location.origin}${window.location.pathname}`
+    : '';
+
   const handleCopyLink = () => {
-    navigator.clipboard.writeText(window.location.href);
+    navigator.clipboard.writeText(shareableUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -250,7 +258,7 @@ export default function DrawPage() {
           <div className={`card ${styles.shareBar}`}>
             <div>
               <p className={styles.shareLabel}>Shareable link</p>
-              <p className={styles.shareUrl}>{typeof window !== 'undefined' ? window.location.href : ''}</p>
+              <p className={styles.shareUrl}>{shareableUrl}</p>
             </div>
             <button className="btn btn-secondary" onClick={handleCopyLink}>
               {copied ? '✓ Copied' : 'Copy link'}
@@ -261,9 +269,11 @@ export default function DrawPage() {
           <section className={`card ${styles.section}`}>
             <div className={styles.matchesTitleRow}>
               <h2 className={styles.sectionTitle} style={{ marginBottom: 0 }}>Matches</h2>
-              <button className="btn btn-secondary" onClick={handleEditAndRedraw}>
-                ← Edit &amp; Redraw
-              </button>
+              {draw.isAdmin && (
+                <button className="btn btn-secondary" onClick={handleEditAndRedraw}>
+                  ← Edit &amp; Redraw
+                </button>
+              )}
             </div>
             <p className={styles.sectionDesc}>
               {draw.matches.length} participant{draw.matches.length !== 1 ? 's' : ''} — each person will give a gift to the person listed beside them.
@@ -318,7 +328,7 @@ export default function DrawPage() {
                                 : <span className={styles.noGroup}>No Group</span>}
                             </span>
                           )}
-                          {m.giver_email && <span className={styles.email}>{m.giver_email}</span>}
+                          {draw.isAdmin && m.giver_email && <span className={styles.email}>{m.giver_email}</span>}
                         </td>
                         {hasGroups && (
                           <td className={styles.groupCol}>
@@ -358,7 +368,7 @@ export default function DrawPage() {
             <h2 className={styles.sectionTitle}>Email notifications</h2>
 
             {(() => {
-              const emailCount = draw.matches.filter((m) => m.giver_email).length;
+              const emailCount = draw.participantsWithEmailCount;
               const hasEmails = emailCount > 0;
 
               if (emailsSentDate) {
@@ -436,7 +446,7 @@ export default function DrawPage() {
           </section>
 
           {/* Delete section */}
-          <section className={`card ${styles.section} ${styles.dangerSection}`}>
+          {draw.isAdmin && <section className={`card ${styles.section} ${styles.dangerSection}`}>
             <h2 className={styles.sectionTitle}>Delete this draw</h2>
             <p className={styles.sectionDesc}>
               Permanently removes access to this draw. The shareable link will no longer display any results.
@@ -467,7 +477,7 @@ export default function DrawPage() {
                 </div>
               </div>
             )}
-          </section>
+          </section>}
         </main>
 
         <footer className={styles.footer}>
