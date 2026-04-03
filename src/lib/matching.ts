@@ -31,7 +31,7 @@ export function isMatchingPossible(participants: Participant[]): {
     return { possible: false, reason: 'At least 2 participants are required.' };
   }
 
-  // Count group sizes (only for named groups)
+  // Count group sizes (only for named groups — ungrouped participants are unconstrained)
   const groupCounts: Record<string, number> = {};
   for (const p of participants) {
     const g = p.group.trim();
@@ -64,9 +64,15 @@ export function isMatchingPossible(participants: Participant[]): {
  * max attempts (should not happen if isMatchingPossible returns true).
  */
 export function createMatches(participants: Participant[]): Match[] | null {
+  // 1000 attempts is more than sufficient given the mathematical guarantee
+  // from isMatchingPossible(). The backtracking fallback only fires in the
+  // extremely unlikely event that all random attempts happen to be invalid.
   const MAX_ATTEMPTS = 1000;
 
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    // Biased shuffle (sort with random comparator) — not uniform, but fast
+    // and good enough for exploratory phase 1. Correctness is handled by
+    // backtracking if all 1000 attempts fail.
     const shuffled = [...participants].sort(() => Math.random() - 0.5);
     const result: Match[] = [];
     let valid = true;
@@ -75,6 +81,8 @@ export function createMatches(participants: Participant[]): Match[] | null {
       const giver = participants[i];
       const receiver = shuffled[i];
 
+      // Reject self-matches and same-group matches.
+      // Group comparison is case-insensitive so "Family" and "family" are the same group.
       if (
         giver.name === receiver.name ||
         (giver.group.trim() &&
@@ -95,6 +103,19 @@ export function createMatches(participants: Participant[]): Match[] | null {
   return backtrackMatch(participants);
 }
 
+/**
+ * Deterministic recursive backtracking matcher.
+ *
+ * Assigns a receiver to each giver one at a time (in `participants` order).
+ * For each giver, a shuffled list of candidate receiver indices is tried; any
+ * index already used or violating a constraint is skipped. If no valid
+ * receiver exists for the current giver, the function returns null and the
+ * caller backtracks by trying the next candidate at the previous level.
+ *
+ * Guaranteed to find a solution if `isMatchingPossible()` returned true.
+ * The shuffle at each level ensures the result is still random rather than
+ * always producing the same deterministic assignment.
+ */
 function backtrackMatch(
   participants: Participant[],
   index = 0,
@@ -104,6 +125,8 @@ function backtrackMatch(
   if (index === participants.length) return result;
 
   const giver = participants[index];
+  // Shuffle candidate indices for randomness — unlike phase 1's biased sort,
+  // this uses a proper Fisher-Yates shuffle (see shuffle() below).
   const indices = shuffle(
     Array.from({ length: participants.length }, (_, i) => i)
   );
@@ -124,6 +147,7 @@ function backtrackMatch(
     result.push({ giver, receiver });
     const sub = backtrackMatch(participants, index + 1, used, result);
     if (sub) return sub;
+    // This path led to a dead end — undo and try the next candidate
     used.delete(ri);
     result.pop();
   }
@@ -131,6 +155,10 @@ function backtrackMatch(
   return null;
 }
 
+/**
+ * Uniform Fisher-Yates in-place shuffle. Returns a new shuffled array.
+ * Used by backtrackMatch to randomise candidate order at each recursion level.
+ */
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -139,4 +167,3 @@ function shuffle<T>(arr: T[]): T[] {
   }
   return a;
 }
-
