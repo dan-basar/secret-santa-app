@@ -73,6 +73,8 @@ Unit tests use Vitest and live in `tests/` (never under `src/pages/`, where Next
 
 All required — no defaults. Store in `.env.local` locally.
 
+**Local `DATABASE_URL` points at the Neon `dev` branch, never production.** The production connection string lives only in Vercel; never run queries, scripts or the dev server against it. `.env.development.local` holds Cloudflare's always-pass Turnstile test keys so emails can be sent from `npm run dev` (the real keys reject `localhost`). Only send email for draws you create, to addresses you were given.
+
 | Variable             | Purpose                           |
 |----------------------|-----------------------------------|
 | `DATABASE_URL`       | Neon Postgres connection string (set by the Neon integration on Vercel; `vercel env pull .env.local` locally) |

@@ -56,6 +56,15 @@ NEXT_PUBLIC_TURNSTILE_SITE_KEY=your-site-key
 TURNSTILE_SECRET_KEY=your-secret-key
 ```
 
+**Local development never uses the production database.** Point `DATABASE_URL` in `.env.local` at the Neon `dev` branch (an empty copy of the schema, with no real participants); the production connection string lives only in Vercel. `vercel env pull` writes the production value, so swap `DATABASE_URL` back to the dev branch after running it.
+
+The real Turnstile keys don't accept `localhost`. For `npm run dev`, put Cloudflare's [published test keys](https://developers.cloudflare.com/turnstile/troubleshooting/testing/) in `.env.development.local`, which overrides `.env.local` only in development:
+
+```dotenv
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=1x00000000000000000000AA
+TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA
+```
+
 ### Database Setup
 
 Run the schema script once to create all required tables (`Draws`, `Participants`, `Matches`, `DailyEmailLog`):
