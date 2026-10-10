@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { v4 as uuidv4 } from 'uuid';
 import { sql } from '@/lib/db';
 import { isMatchingPossible, createMatches, Participant } from '@/lib/matching';
-import { stripHtml } from '@/lib/sanitize';
+import { hasHtmlTag } from '@/lib/sanitize';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).end();
@@ -16,17 +16,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ error: 'Maximum 50 participants allowed.' });
   }
 
-  // Sanitize all user-provided text inputs
+  // Names and groups are stored as plain text exactly as typed (e.g. "Tom & Jerry");
+  // React escapes them on screen and email.ts escapes them in emails
   for (const p of participants) {
-    p.name = stripHtml(p.name);
+    p.name = p.name ? p.name.trim() : '';
     p.email = p.email ? p.email.trim().toLowerCase() : '';
-    p.group = p.group ? stripHtml(p.group) : '';
+    p.group = p.group ? p.group.trim() : '';
   }
 
-  // Re-validate after sanitization (names could become empty after stripping tags)
   const emptyNames = participants.filter(p => !p.name);
   if (emptyNames.length > 0) {
-    return res.status(400).json({ error: 'All participants must have a valid name (HTML is not allowed).' });
+    return res.status(400).json({ error: 'All participants must have a name.' });
+  }
+
+  if (participants.some(p => hasHtmlTag(p.name) || hasHtmlTag(p.group))) {
+    return res.status(400).json({ error: 'Names and groups cannot contain HTML.' });
   }
 
   // Validate email format if provided
